@@ -18,7 +18,7 @@ sub_loop:               // (for j = 0; j < arr.len-i; j++)
                         // else:
     ldrb r6, [r0, r3]   //     r6 = arr[j]
     ldrb r7, [r0, r4]   //     r7 = arr[j+1]
-    cmp r6, r7          //     if (r6 == r7):
+    cmp r6, r7          //     if (arr[j] > arr[j+1]):
     bgt swap            //         Go to swap
                         //     else:
     add r3, #1          //         j += 1
