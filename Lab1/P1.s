@@ -29,7 +29,7 @@ main:
     ldr r0, =X      // r0 stores the "value" of "X"
     ldr r1, =Y      // r1 stores the "value" of "Y"
     ldr r2, =result // r2 stores the "address" of "result"
-    ldr r3, [r2]    // Initiate r3 as 0 (value of "result")
+    ldr r3, [r2]    // Initialize r3 as 0 (value of "result")
     bl hamm         // Go to hamm and store return address
     str r3, [r2]    // Store the final value of r3 to *r2 (*r2 = result = r3)
 
