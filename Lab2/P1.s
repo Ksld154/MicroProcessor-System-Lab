@@ -10,9 +10,8 @@
 
 .text
     .global main
-    .equ negative, -1
-    postfix_expr: .asciz "-100 10 20 + - 10 +" //ans: -120
-    @ postfix_expr: .asciz "3 5 4 - +" //ans: -4
+    @ postfix_expr: .asciz "-100 10 20 + - 10 +" //ans: -120
+    postfix_expr: .asciz "2 3 1 + + 9 -" //ans: -3
     
     main:
         // TODO: Setup stack pointer to end of user_stack and calculate the
