@@ -12,10 +12,10 @@
 
 .text
     .global main
-    m: .word 0x5E
-    n: .word 0x60
-    @ m: .word 0x01
-    @ n: .word 0x01
+    @ m: .word 0x5E
+    @ n: .word 0x60
+    m: .word 0x01
+    n: .word 0x03
     
     main:
         LDR  SP, =user_stack_bottom
@@ -25,14 +25,17 @@
         LDR  R0, [R1]  // R0: value of m
         LDR  R1, [R2]  // R1: value of n
         MOV  R6, #0    // R6: occurance of both a and b are even
-        MOV  R7, #0    // R7: maximum stack size
+        MOV  R7, #0    // R7: current stack items
+        MOV  R9, #0    // R9: maximum stack items
 
         @ MOV  R10, R0
         @ MOV  R11, R1
         @ PUSH {R10}
         @ PUSH {R11}
-        PUSH  {R0, R1}
+        PUSH  {R0}
+        PUSH  {R1}
         ADDS  R7, #2
+        BL update_max_stk_size
 
         BL GCD
 
@@ -41,9 +44,9 @@
         @ BL GCD_get_value
 
         LDR  R8, =max_size
-        LDR  R9, =result
-        STR  R7, [R8]
-        STR  R2, [R9]
+        STR  R9, [R8]
+        LDR  R8, =result
+        STR  R2, [R8]
 
         B program_end
 
@@ -139,22 +142,31 @@
             B gcd_recursive_call
 
         b_bigger:
-            SUB   R0, R1, R0     // m = n - m
+            MOVS  R8, R0         // tmp = m
+            SUB   R0, R1, R0     // m' = n - m
+            MOVS  R1, R8         // n' = tmp
             B gcd_recursive_call
         
         gcd_recursive_call:
             MOVS R10, R0
             MOVS R11, R1
-            PUSH  {R10, R11}
-            @ PUSH  {R11}
-            ADDS  R7, #2
+            PUSH  {R10}
+            PUSH  {R11}
+            ADD  R7, #2
+            BL update_max_stk_size
             BL GCD
             POP   {LR}
             BX LR
 
-    GCD_get_value:
-        LSL  R2, R6
-        BX LR 
+        update_max_stk_size:
+            CMP R7, R9
+            IT  GT
+            MOVGT R9, R7
+            BX LR
+
+    @ GCD_get_value:
+    @     LSL  R2, R6
+    @     BX LR 
 
     program_end:
         B program_end
