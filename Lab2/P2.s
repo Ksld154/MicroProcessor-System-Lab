@@ -41,8 +41,6 @@
 
         LSL  R2, R6
 
-        @ BL GCD_get_value
-
         LDR  R8, =max_size
         STR  R9, [R8]
         LDR  R8, =result
@@ -107,34 +105,14 @@
             ADD   R6, #1
 
             B gcd_recursive_call
-            @ PUSH {R0, R1}
-            @ PUSH {LR}  
-            @ BL GCD
-            @ POP  {LR}
-            @ POP  {R0, R1}
-            @ BX LR
         
         b_odd:
             LSR   R0, #1
-            
             B gcd_recursive_call
-            @ PUSH  {R0, R1}
-            @ PUSH  {LR}
-            @ BL GCD
-            @ POP   {LR}
-            @ POP   {R0, R1}
-            @ BX LR
         
         a_odd:
             LSR   R1, #1
-            
             B gcd_recursive_call
-            @ PUSH  {R0, R1}
-            @ PUSH  {LR}
-            @ BL GCD
-            @ POP   {LR}
-            @ POP   {R0, R1}
-            @ BX LR
 
 
         a_bigger:
@@ -163,10 +141,6 @@
             IT  GT
             MOVGT R9, R7
             BX LR
-
-    @ GCD_get_value:
-    @     LSL  R2, R6
-    @     BX LR 
 
     program_end:
         B program_end
