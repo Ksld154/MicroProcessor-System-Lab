@@ -1,6 +1,6 @@
-    .syntax unified
-    .cpu cortex-m4
-    .thumb
+.syntax unified
+.cpu cortex-m4
+.thumb
 
 
 .data
@@ -44,7 +44,7 @@
             CMP  R3, #32                //     if (s[i] == ' ')
             BEQ  eval_isSpace           //         then do nothing, i++
             CMP  R3, #48                //     else if (s[i] is digit)
-            BGT  eval_isDigit           //         get the integer value
+            BGE  eval_isDigit           //         get the integer value
             CMP  R3, #43                //     else if (s[i] == '+')
             BEQ  eval_plus              //         do add operation
             CMP  R3, #45                //     else if (s[i] == '-')
