@@ -25,6 +25,13 @@
     .equ GPIOA_BSRR,    0x48000018
     .equ GPIOA_BRR,     0x48000028
 
+    // For button
+    .equ GPIOC_MODER  , 0x48000800
+    .equ GPIOC_OTYPER ,	0x48000804
+    .equ GPIOC_OSPEEDR,	0x48000808
+    .equ GPIOC_PUPDR  ,	0x4800080c
+    .equ GPIOC_IDR    , 0x48000810
+
     // for Max7219 register init
     .equ DECODE_MODE,   0x9
     .equ INTENSITY,     0xA
@@ -35,7 +42,7 @@
     .equ CS,            0x40 //PA6
     .equ CLK,           0x80 //PA7
 
-    .equ ONE, 400000
+    .equ ONE, 150000
     .equ FIB_THRESHOLD, 100000000
     .equ N, 20
 
@@ -47,18 +54,33 @@ main:
     BL      MAX7219_init
     BL      fib_init
 
-    BL      fib_calculate
+CHECKPRESS:
+    LDR     R7, =ONE
+    LDR     R8, [R9]    // Read signal from all pins in port C
+    LSR     R8, R8, #13 // Button is PC13, we only want read it's signal, so we shift 13 bits right
+    AND     R8, R8, 0x1 // Make R8 only one bit
 
-    B       Program_end
+    CMP     R8, #0      // Pressed => 0 (because of pull-up input)
+    IT      EQ
+    ADDEQ   R10, #1      // R5 adds 1 when receiving 0 from button signal (button is pressed)
 
+    CMP     R8, #1      // If receiving 1 from button signal (button is not pressed or it's in button bounce duration)
+    IT      EQ
+    MOVEQ   R10, #0      // Reset counter (we MUST make sure that we receive 0 from button signal for 500 times CONTINUOUSLY, that is, we can't get 1 in these 500 times, if so, reset counter)
 
+    CMP     R10, R7    // If counter reaches the threshold
+    BEQ     fib_init
+    CMP     R10, #1000    // If counter reaches the threshold
+    BNE     CHECKPRESS  // If not re-run CHECKPRESS
+
+    BX      LR    // If so, check the password
 
 GPIO_init:
     //TODO: Initialize three GPIO pins as output for max7219 DIN, CS and CLK
 
     // use A5 ~ A7
     // Enable AHB clock for using GPIO bus
-    MOVS    R0, 0x1           // 0x1 means using GPIO_A
+    MOVS    R0, 0x5           // 0x1 means using GPIO_A
     LDR     R1, =RCC_AHB2ENR
     STR     R0, [R1]
 
@@ -73,14 +95,27 @@ GPIO_init:
     LDR     R1, =GPIOA_OSPEEDR
     STRH    R0, [R1]         // high speed mode for OSPEED5~OSPEED7
 
-    BX LR
+    //GPIOC
+    LDR     R1, =GPIOC_MODER
+    LDR     R2, [R1]
+    AND     R2, 0xF3FFFFFF      // Mode 13 = 0b00 => input mode
+    STR     R2,	[R1]
+
+    MOVS    R0, 0x4000000
+    LDR     R1, =GPIOC_PUPDR
+    AND     R2, 0xF3FFFFFF
+    ORRS    R2, R2, R0
+    LDR     R2, [R1]
+
+    LDR     R9, =GPIOC_IDR
+    BX      LR
 
 
 
 MAX7219_init:
     //TODO: Initial max7219 registers.
 
-    MOV R9, LR
+    PUSH {R9, LR}
 
     LDR r0, =DECODE_MODE
     LDR r1, =0xFF  // Code B (display number 0~9)
@@ -102,7 +137,7 @@ MAX7219_init:
     LDR r1, =0x1  // NO shutdown
     BL MAX7219Send
 
-    MOV LR, R9
+    POP {R9, LR}
     BX  LR
 
 
@@ -146,8 +181,7 @@ fib_init:
     MOVS R1, #1      // R1 is initialized as 1, stands for fib(1)
     MOVS R2, #1      // R2 is initialized as 1, stands for fib(2)
 	MOVS R4, #0
-    BX  LR
-
+    B fib_calculate
 
 fib_firstthree:
     MOV     R3, #1
@@ -161,7 +195,7 @@ fib_firstthree:
 
     BL      display_nothing
     BL      fib_showdigit
-    //BL      check_press
+    BL      CHECKPRESS
 
     ADD     R4, #1
     B       fib_calculate
@@ -192,7 +226,7 @@ fib_calculate:
     // branch to fib_showdigit
     BL  display_nothing
     BL  fib_showdigit
-    //BL  check_press
+    BL  CHECKPRESS
 
     B   fib_calculate
 
@@ -201,7 +235,7 @@ fib_calculate:
         BL  display_nothing
         BL  fib_show_overflow
 
-        //BL  check_press
+        BL  CHECKPRESS
         B   fib_calculate
 
 
@@ -209,8 +243,7 @@ fib_showdigit:
     // input: R3 => fib(n)
     //
 
-    PUSH    {R0, R1, R4}
-    MOV     R9, LR
+    PUSH    {R0, R1, R4, R9, LR}
     MOV     R8, #1
 
     show_loop:
@@ -229,8 +262,7 @@ fib_showdigit:
         CMP     R3, #0
         BNE     show_loop
 
-    POP     {R0, R1, R4}
-    MOV     LR, R9
+    POP     {R0, R1, R4, R9, LR}
     BX      LR
 
 fib_show_overflow:
@@ -288,7 +320,3 @@ display_nothing:
 
     POP     {R0, R1, R2, R4, LR}
     BX      LR
-
-
-Program_end:
-    B Program_end
