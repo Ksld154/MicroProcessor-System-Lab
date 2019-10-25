@@ -37,7 +37,7 @@
 
     .equ ONE, 400000
     .equ FIB_THRESHOLD, 100000000
-    .equ N, 10
+    .equ N, 20
 
 main:
     //TODO: display your student id on 7-Seg LED
@@ -141,52 +141,52 @@ MAX7219Send:
 
 
 fib_init:
-    MOVS R0, N
+    // MOVS R0, N
     MOVS R1, #1      // R1 is initialized as 1, stands for fib(1)
     MOVS R2, #1      // R2 is initialized as 1, stands for fib(2)
-    MOVS R10, #1
-    // R3, =fib_result  // R3 stores the "address" of "result"
-    //LDR R4, [R3]     // R4 is initialized as 0 (value of "result")
-    //BL  fib_checkN
+	MOVS R4, #0
     BL  fib_calculate
     BX  LR
 
-fib_checkN:
-    CMP   R0, #2
-    ITT   LE  // less than or equal
-    MOVLE R3, #1
-    BLE   fib_showdigit
 
-    SUB R0, #2
-    BX  LR
+fib_firstthree:
+    MOV     R3, #1
+    // SUBS    R0, R0, #1          // n--
 
-fib_firsttwo:
-	MOV     R3, #1
-    subs    R0, R0, #1          // n--
+    // fib(0) == 0
+    CMP     R4, #0
+    IT     EQ
+    MOVEQ   R3, #0
+    //ADDEQ   R0, #1
+
     BL      display_nothing
     BL      fib_showdigit
-    ADD     R10, #1
+
+    ADD     R4, #1
     B       fib_calculate
 
 fib_calculate:
     // input: R0 => n
     // output: R3 => fib(n)
 
-    // PUSH    {R0, R1, R2, R3}
-    CMP R10, #2
-    BLE fib_firsttwo
 
-    CMP     R0, #0             // if n == 0, then return to main
-    IT      EQ
-    BXEQ    LR
+	//BL  fib_checkN
+    CMP   	R4, #2
+    BLE	   	fib_firstthree
+
+
+    //CMP     R0, #0             // if n == 0, then return to main
+    //IT      EQ
+    //BXEQ    LR
 
     adds R3, R1, R2          // f[k] = f[k-2] + f[k-1]
-    //CMP  R3, FIB_THRESHOLD
-    //BGT  fib_overflow
+    LDR  R4, =FIB_THRESHOLD
+    CMP  R3, R4
+    BGT  fib_overflow
 
     movs R1, R2              // f[k-2] = f[k-1]
     movs R2, R3              // f[k-1] = f[k]
-    subs R0, R0, #1          // n--
+    //subs R0, R0, #1          // n--
 
     // branch to fib_showdigit
     BL  display_nothing
@@ -196,7 +196,7 @@ fib_calculate:
     fib_overflow:
         MOVS R3, #-1
         BL  display_nothing
-        BL  fib_showdigit
+        BL  fib_show_overflow
         B   fib_calculate
 
 
@@ -204,7 +204,7 @@ fib_showdigit:
     // input: R3 => fib(n)
     //
 
-    PUSH    {R0, R1}
+    PUSH    {R0, R1, R4}
     MOV     R9, LR
     MOV     R8, #1
 
@@ -224,15 +224,26 @@ fib_showdigit:
         CMP     R3, #0
         BNE     show_loop
 
-    POP     {R0, R1}
+    POP     {R0, R1, R4}
     MOV     LR, R9
     BX      LR
 
+fib_show_overflow:
+
+    MOV     R0, 0x1
+    MOV     R1, 0x1
+    BL      MAX7219Send
+
+    MOV     R0, 0x2
+    MOV     R1, 0xA
+    BL      MAX7219Send
+
+    B Program_end
 
 display_nothing:
     // TODO: let all 8 led digits display nothing
 
-    PUSH    {R0, R1, LR}
+    PUSH    {R0, R1, R4, LR}
 
     MOV     R0, 0x1
     MOV     R1, 0xF
@@ -266,31 +277,9 @@ display_nothing:
     MOV     R1, 0xF
     BL      MAX7219Send
 
-    POP     {R0, R1, LR}
+    POP     {R0, R1, R4, LR}
     BX      LR
 
-display_studentId:
-
-    //r9=tmp_LR
-    MOV     R9, LR
-
-    LDR  R10, =student_id  // address of student_id
-    MOV  R11, 0x7          // digit position on LED
-    MOV  R8,  #0           // index of student_id
-
-    display_onedigit:
-
-    	MOV     R0, R11
-        LDRB    R1, [R10, R8]
-        BL      MAX7219Send
-
-        SUB     R11, #1
-        ADD     R8, #1
-        CMP     R11, 0x0
-        BNE     display_onedigit
-
-    MOV     LR, R9
-    BX      LR
 
 Program_end:
     B Program_end
