@@ -12,8 +12,6 @@
 
 .text
     .global main
-    @ m: .word 0x5E
-    @ n: .word 0x60
     m: .word 0x01
     n: .word 0x03
     
@@ -25,13 +23,10 @@
         LDR  R0, [R1]  // R0: value of m
         LDR  R1, [R2]  // R1: value of n
         MOV  R6, #0    // R6: occurance of both a and b are even
-        MOV  R7, #0    // R7: current stack items
-        MOV  R9, #0    // R9: maximum stack items
+        MOV  R7, #0    // R7: number of current stack items
+        MOV  R9, #0    // R9: number of maximum stack items
 
-        @ MOV  R10, R0
-        @ MOV  R11, R1
-        @ PUSH {R10}
-        @ PUSH {R11}
+
         PUSH  {R0}
         PUSH  {R1}
         ADDS  R7, #2
@@ -50,7 +45,7 @@
 
 
     GCD:
-        @ TODO: Implement your GCD function
+        // TODO: Implement your GCD function
          
         // R0: m
         // R1: n
@@ -59,81 +54,79 @@
         POP   {R11}            // R11: n
         POP   {R10}            // R10: m
         SUBS  R7, #2
-        MOVS R0, R10
-        MOVS R1, R11
-        @ LDR R0, [SP]      // R0: m   
-        @ LDR R1, [SP, #4]  // R1: n
+        MOVS  R0, R10          // R0: m   
+        MOVS  R1, R11          // R1: n
         
-        @ PUSH  {R0, R1}
         PUSH  {LR}
         ADDS  R7, #1
 
-        CMP   R0, #0
-        ITTT  EQ
-        MOVEQ R2, R1
-        POPEQ {R10}
-        BXEQ LR
+        CMP   R0, #0          // if(m == 0){
+        ITTT  EQ              //
+        MOVEQ R2, R1          //    result = n;   
+        POPEQ {R10}           //    return to main;
+        BXEQ LR               // }
 
-        CMP   R1, #0
-        ITTT  EQ
-        MOVEQ R2, R0
-        POPEQ {R10}
-        BXEQ LR
+        CMP   R1, #0          // if(n == 0) {
+        ITTT  EQ              // 
+        MOVEQ R2, R0          //    result = m;   
+        POPEQ {R10}           //    return to main
+        BXEQ LR               // }
 
-        @ both a and b are even => return 2*gcd(a>>1, b>>1)
+        
+        
         AND   R3, R0, #1  // R3 == 1, means that a is ODD      
         AND   R4, R1, #1  // R4 == 1, means that b is ODD
-        ORR   R5, R3, R4  // R5: a & b (R5==1 means that AT LEAST a or b is ODD)
+        ORR   R5, R3, R4  // R5: a & b (R5 == 1, means that AT LEAST a is ODD or b is ODD)
         
-        CMP   R5, #0      //     i.e. R5==0 means that BOTH a and b is EVEN
-        BEQ   both_even
+        CMP   R5, #0      // CASE1: R5 == 0, means that BOTH a and b is EVEN
+        BEQ   both_even   //        => return 2*gcd(a>>1, b>>1)
         
-        CMP   R3, #0
-        BEQ   b_odd
-        CMP   R4, #0
+        CMP   R3, #0      // CASE2: R3 == 0, means that a is EVEN and b is ODD
+        BEQ   b_odd                
+        CMP   R4, #0      // CASE3: R4 == 0, means that a is ODD  and b is EVEN
         BEQ   a_odd
 
-        CMP   R0, R1
+        CMP   R0, R1      // CASE4: both a and b are ODD
         BGE   a_bigger
         BLT   b_bigger
 
         BX LR
     
         both_even:
-            LSR   R0, #1
-            LSR   R1, #1
-            ADD   R6, #1
-
+            LSR   R0, #1          // m /= 2
+            LSR   R1, #1          // n /= 2
+            ADD   R6, #1          // R6: occurance of both a and b are even, this means how many times we need to multiply 2
+                                  //     to get the GCD result at main function.
             B gcd_recursive_call
         
         b_odd:
-            LSR   R0, #1
-            B gcd_recursive_call
+            LSR   R0, #1          // m /= 2
+            B gcd_recursive_call  // return gcd(m/2, n)
         
         a_odd:
-            LSR   R1, #1
-            B gcd_recursive_call
+            LSR   R1, #1          // n /= 2
+            B gcd_recursive_call  //return gcd(m, n/2)
 
 
         a_bigger:
-            SUB   R0, R0, R1     // m = m - n
-            B gcd_recursive_call
+            SUB   R0, R0, R1      // m = m - n
+            B gcd_recursive_call  // return gcd(m-n, n) 
 
         b_bigger:
             MOVS  R8, R0         // tmp = m
             SUB   R0, R1, R0     // m' = n - m
             MOVS  R1, R8         // n' = tmp
-            B gcd_recursive_call
+            B gcd_recursive_call // return gcd(n-m, m)
         
         gcd_recursive_call:
             MOVS R10, R0
             MOVS R11, R1
-            PUSH  {R10}
-            PUSH  {R11}
+            PUSH {R10}
+            PUSH {R11}
             ADD  R7, #2
             BL update_max_stk_size
             BL GCD
-            POP   {LR}
+            POP  {LR}
             BX LR
 
         update_max_stk_size:
@@ -142,5 +135,5 @@
             MOVGT R9, R7
             BX LR
 
-    program_end:
-        B program_end
+program_end:
+    B program_end

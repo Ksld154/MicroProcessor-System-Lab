@@ -24,27 +24,27 @@ fib:
 
 
 checkN:
-    cmp R0, #100
+    cmp R0, #100            // N > 100
     bgt fail_OutOfRange
-    cmp R0, #1
+    cmp R0, #1              // N < 1
     blt fail_OutOfRange
-    cmp R0, #2
+    cmp R0, #2              // N <= 2  (N == 1 or N == 2)
     bls success_FirstTwoIndex
 
     subs R0, #2 
-    bx lr
+    bx lr  // return to main
 
-fail_OutOfRange:
+fail_OutOfRange:         // ans = -1
     movs R4, #0
     subs R4, 1
     b L  // Return to L
 
-fail_Overflow:
+fail_Overflow:           // ans = -2
     movs R4, #0
     subs R4, 2
-    b L  // Return to L
+    b L 
 
-success_FirstTwoIndex:
+success_FirstTwoIndex:   // ans = 1 
     movs R4, #1
     b L
 

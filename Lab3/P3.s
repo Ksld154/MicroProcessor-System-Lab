@@ -60,18 +60,20 @@ BLINKONCE:
 
 BLINK:
     MOV     R4, LR      // Store the link register
+    
     MOVS    R1, 0xF
     STRB    R1, [R0]    // led = 1111, that is all 4 leds will be displayed
     BL      DisplayLED
     LDR     R3, =ONE
     BL      Delay       // Wait 0.5s
+    
     MOVS    R1, 0x0
     STRB    R1, [R0]    // led = 0000, that is all 4 leds will NOT be displayed
     BL      DisplayLED
     LDR     R3, =ONE
     BL      Delay       // Wait 0.5s
+    
     MOV     LR, R4      // Load the link register
-
     BX      LR
 
 CHECKPWD:
@@ -105,7 +107,7 @@ GPIO_init:
     LDR     R1, =GPIOA_OSPEEDR
     STRH    R0, [R1]
 
-    //GPIOC
+    //GPIOC: C13 => button, C5~C8 => DIP switch
     LDR     R1, =GPIOC_MODER
     LDR     R2, [R1]
     AND     R2, 0xFFFC03FF      // GPIOC_MODE 5~8 = 0b00 00 00 00 => input mode
@@ -114,7 +116,7 @@ GPIO_init:
 
     LDR     R1, =GPIOC_PUPDR
     LDR     R2, [R1]
-    AND     R2, 0xF3FFFFFF      // Mask to set pin 13 0
+    AND     R2, 0xF3FFFFFF      // Mask to set pin 13 to 0
     AND     R2, 0xFFFC03FF      // Mask to set pin 5~8 to 0
     MOV     R0, 0x4000000       // Set pin 13 to 0b01 (pull-up)
     ORRS    R2, R2, R0

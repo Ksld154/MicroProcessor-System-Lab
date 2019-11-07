@@ -10,8 +10,8 @@
 
 .text
     .global main
-    @ postfix_expr: .asciz "-100 10 20 + - 10 +" //ans: -120
-    postfix_expr: .asciz "2 3 1 + + 9 -" //ans: -3
+    postfix_expr: .asciz "-100 10 20 + - 10 +" //ans: -120
+    //postfix_expr: .asciz "2 3 1 + + 9 -" //ans: -3
     
     main:
         // TODO: Setup stack pointer to end of user_stack and calculate the
@@ -24,63 +24,63 @@
         B evaluate_postfix
 
 
-    evaluate_postfix:
+evaluate_postfix:
+    
+    BL strlen
+    // R0: base address of postfix_expr
+    // R1: return the length of postfix_expr
+    // R2: int i = 0
+    // R3: expr[i]
+
+    MOVS R2, #0
+    MOVS R10, #-1
+    
+    eval_ScanLoop:                  // for(i = 0; i < strlen(expr); i++)
+        CMP  R2, R1                 //     if(i >= strlen(expr)) exit_loop
+        BGE  show_result
+
+        LDRB R3, [R0, R2]           //     R3: expr[i]
+
+        CMP  R3, #32                //     if (s[i] == ' ')
+        BEQ  eval_isSpace           //         then do nothing, i++
+        CMP  R3, #48                //     else if (s[i] is digit)
+        BGE  eval_isDigit           //         get the integer value
+        CMP  R3, #43                //     else if (s[i] == '+')
+        BEQ  eval_plus              //         do add operation
+        CMP  R3, #45                //     else if (s[i] == '-')
+        BEQ  eval_minus             //         NOT SURE it's (1)sign bit or (2) subtract operation
+
+        eval_isSpace:
+            ADDS R2, #1
+            B eval_ScanLoop
         
-        BL strlen
-        // R0: base address of postfix_expr
-        // R1: return the length of postfix_expr
-        // R2: int i = 0
-        // R3: expr[i]
-
-        MOVS R2, #0
-        MOVS R10, #-1
+        eval_isDigit:
+            BL atoi
+            CMP  R2, R1            // check expr[i] doesn't exceed it's boundary
+            BLT  eval_ScanLoop
         
-        eval_ScanLoop:                  // for(i = 0; i < strlen(expr); i++)
-            CMP  R2, R1                 //     if(i >= strlen(expr)) exit_loop
-            BGE  show_result
+        eval_plus:
+            BL operation_plus
+            ADDS R2, #1
+            B eval_ScanLoop
+        
+        eval_minus:
+            @ expr[i] == '-' 
+            @ Might be (1)sign bit or (2) MINUS operation
+            ADDS R2, R2, #1
+            LDRB R4, [R0, R2]       // R4: expr[i+1]
+            SUBS R2, #1
 
-            LDRB R3, [R0, R2]           //     R3: expr[i]
+            CMP  R4, #32            // expr[i+1] == ' '
+            BEQ  operation_minus    //      do MINUS operation
+            CMP  R4, #0             // expr[i+1] == '\0'
+            BEQ  operation_minus    //      do MINUS operation
 
-            CMP  R3, #32                //     if (s[i] == ' ')
-            BEQ  eval_isSpace           //         then do nothing, i++
-            CMP  R3, #48                //     else if (s[i] is digit)
-            BGE  eval_isDigit           //         get the integer value
-            CMP  R3, #43                //     else if (s[i] == '+')
-            BEQ  eval_plus              //         do add operation
-            CMP  R3, #45                //     else if (s[i] == '-')
-            BEQ  eval_minus             //         NOT SURE it's (1)sign bit or (2) subtract operation
-
-            eval_isSpace:
-                ADDS R2, #1
-                B eval_ScanLoop
-            
-            eval_isDigit:
-                BL atoi
-                CMP  R2, R1            // check expr[i] doesn't exceed it's boundary
-                BLT  eval_ScanLoop
-            
-            eval_plus:
-                BL operation_plus
-                ADDS R2, #1
-                B eval_ScanLoop
-            
-            eval_minus:
-                @ expr[i] == '-' 
-                @ Might be (1)sign bit or (2) MINUS operation
-                ADDS R2, R2, #1
-                LDRB R4, [R0, R2]       // R4: expr[i+1]
-                SUBS R2, #1
-
-                CMP  R4, #32            // expr[i+1] == ' '
-                BEQ  operation_minus    //      do MINUS operation
-                CMP  R4, #0             // expr[i+1] == '\0'
-                BEQ  operation_minus    //      do MINUS operation
-
-                MOVS R7, #1             // sign bit is 1(negative)
-                ADDS R2, #1
-                BL atoi
-                CMP  R2, R1             // check expr[i] doesn't exceed it's boundary
-                BLT  eval_ScanLoop      
+            MOVS R7, #1             // sign bit is 1(negative)
+            ADDS R2, #1
+            BL atoi
+            CMP  R2, R1             // check expr[i] doesn't exceed it's boundary
+            BLT  eval_ScanLoop      
 
         
 
@@ -94,7 +94,7 @@
 
         strlen_Loop:              // for(i = 0; arr[i]!='\0'; i++)
             LDRB R2, [R0, R1]     //    R2: arr[i]
-            CMP  R2, 0            //    if(arr[i] == -*/0') 
+            CMP  R2, 0            //    if(arr[i] == '\0') 
             BEQ  strlen_Escape    //        exit for_loop
             ADDS R1, #1           //    i++
             B strlen_Loop
@@ -110,7 +110,7 @@
         // R3: expr[i]
     
         // R6: converted_integer
-        // R7: sign bit
+        // R7: sign bit(0: positive, 1: negative)
         // R8: #10
         MOV  R6, #0
         MOV  R8, #10
@@ -123,7 +123,7 @@
 
             MUL  R6, R8             // R6 *= 10
             SUBS R3, #48            
-            ADDS R6, R3             // R6 += input_str[i] - '0';
+            ADDS R6, R3             // R6 += expr[i] - '0';
             
             ADDS R2, #1             //    i++
             B atoi_Loop
@@ -132,8 +132,8 @@
             CMP  R7, #1
             BNE  atoi_ReturnPositive            
             
-            SUBS R7, #2
-            MULS R6, R7             // R6 *= signBit
+            SUBS R7, #2             // R7 = -1
+            MULS R6, R7             // R6 *= -1
             PUSH {R6}
             BX LR
         
@@ -165,8 +165,8 @@
 
     show_result:
         POP  {R4}
-        STRB R4, [R9]
+        STR R4, [R9]
         B program_end
 
-    program_end:
-        B program_end
+program_end:
+    B program_end

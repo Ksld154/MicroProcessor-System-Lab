@@ -102,7 +102,7 @@ STOP:
 
 GPIO_init:
     //TODO: Initial LED GPIO pins as output
-    MOVS    R0, 0x5
+    MOVS    R0, 0x5          // open GPIO_A, GPIO_C
     LDR     R1, =RCC_AHB2ENR
     STR     R0, [R1]
 
@@ -161,7 +161,7 @@ CHECKPRESS:
     // R8 = output
     // R9 = button input
 
-    // R4 = 0 means the button is pressed
+    // R4 = 0 means the button is pressed (Pull-up => not-pressed: HIGH, pressed: LOW)
     // R5 = Debouncing counter
 
     LDR     R4, [R9]
@@ -172,9 +172,9 @@ CHECKPRESS:
     IT      EQ
     ADDEQ   R5, #1       // cnt++
 
-    CMP     R4, #1       
+    CMP     R4, #1       // not pressed: it's in bouncing stage! => clear the counter
     IT      EQ
-    MOVEQ   R5, #0      // Exclude the bouncing stage!!
+    MOVEQ   R5, #0       // Exclude the bouncing stage!!
                         
     // 要讓他連續500次讀到的數值都是0，才能肯定他現在處於穩定狀態，並去改變LED狀態
     CMP     R5, #500    // Debouncing: check button is pressed for consecutive 500 time units(us), 

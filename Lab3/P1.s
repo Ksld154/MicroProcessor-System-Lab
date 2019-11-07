@@ -22,6 +22,7 @@ main:
     MOVS    R1, #1
     LDR     R0, =leds   @ R0: address of leds
     STRB    R1, [R0]    @ R1: value of leds
+    
     BL      DisplayLED
     LDR     R3, =ONE
     BL      Delay
@@ -35,7 +36,7 @@ Loop:
 // R1: index of current lighten leds
 // R2: index of next leds
     
-    @ A5 -> A8 (0001(1) -> 0011(3) -> 0110(6) -> 1100(12) -> 1000(8))
+    // A5 -> A8 (0001(1) -> 0011(3) -> 0110(6) -> 1100(12) -> 1000(8))
     GOLEFT: 
         LDR     R1, [R0]
         LSL     R2, R1, #1
