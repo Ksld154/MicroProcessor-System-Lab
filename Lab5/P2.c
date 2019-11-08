@@ -41,10 +41,10 @@ void keypad_init(){
     RCC->AHB2ENR = 0x7;
 
     // PB5-PB8: input mode
-    // Set pin 5~8 to 0b00 00 00 00 (input mode)
+    // Set PB5-PB8 to 0b00 00 00 00 (input mode)
     GPIOB->MODER = 0xFFFC03FF;
 
-    // Set PB5-PB8 to 0b01 01 01 01 (pull-up)
+    // Set PB5-PB8 to 0b01 01 01 01 (pull-down)
     GPIOB->PUPDR = 0xFFFC03FF;
     GPIOB->PUPDR = GPIOB->PUPDR | 0x2A800;
 
@@ -89,9 +89,9 @@ int display_nothing(){
     -1: no keypress
 */
 char keypad_scan(){
-    // PC5-PC8: input  X (row)
-    // PB5-PB8: output Y (col)
-    
+    // PC5-PC8: keypad input  X (col0-col3)
+    // PB5-PB8: keypad output Y (row0-row3)
+
     int key_row = 0;
     int key_col = 0;
     int pressed_value = -1;
@@ -99,8 +99,8 @@ char keypad_scan(){
     while(1){
         for(key_row = 0; key_row < 4; key_row++){
             for(key_col = 0; key_col < 4; key_col++){
-                
-                // send target column pin(PB5-PB8)  0b1
+
+                // send 0b1 to target column pin(PC5-PC8)
                 GPIOC->BRR = 0xF << 5;
                 GPIOC->BSRR = (0x1 << (key_col+5));
 
@@ -118,10 +118,11 @@ char keypad_scan(){
                 else{
                     GPIOC->BSRR = (0xF << 5);
                     int key_pressed = ((GPIOB->IDR) >> 5) & 0xF;
-                    if(key_pressed == 0) display_nothing();
+                    if(key_pressed == 0)
+                        display_nothing();
                 }
             }
-        } 
+        }
     }
 }
 
@@ -129,7 +130,7 @@ int main(){
     GPIO_init();
     max7219_init();
     keypad_init();
-    
+
     display_nothing();
     keypad_scan();
 
