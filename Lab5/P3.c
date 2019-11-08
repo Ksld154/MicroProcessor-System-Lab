@@ -100,7 +100,7 @@ int display_nothing(){
 char keypad_scan(){
     // PC5-PC8: keypad input  X (col0-col3)
     // PB5-PB8: keypad output Y (row0-row3)
-    
+
     int key_row = 0;
     int key_col = 0;
 
@@ -109,7 +109,9 @@ char keypad_scan(){
     while(1){
         for(key_row = 0; key_row < 4; key_row++){
             for(key_col = 0; key_col < 4; key_col++){
-                
+                GPIOC->MODER &= (0xFFFFFFFF ^ (0x11 << (2*key_col+10)));
+                GPIOC->MODER |= (0x01 << (2*key_col+10));
+
                 // send 0b1 to target column pin(PC5-PC8)
                 GPIOC->BRR = 0xF << 5;
                 GPIOC->BSRR = (0x1 << (key_col+5));
@@ -123,12 +125,14 @@ char keypad_scan(){
                 }
                 else{
                     key_pressed_map[key_row][key_col] = 0;
-                   
+
                     // GPIOC->BSRR = (0xF << 5);
                     // int key_pressed = ((GPIOB->IDR) >> 5) & 0xF;
-                    // if(key_pressed == 0) 
+                    // if(key_pressed == 0)
                     //     display_nothing();
                 }
+                GPIOC->MODER &= (0xFFFFFFFF ^ (0x11 << (2*key_col+10)));
+                GPIOC->MODER |= (0x00 << (2*key_col+10));
 
             }
         }
@@ -144,7 +148,7 @@ char keypad_scan(){
                 }
             }
         }
-        
+
         // display_nothing();
         if(total_pressed_value >= 100)
             display(total_pressed_value, 3);
@@ -157,7 +161,7 @@ char keypad_scan(){
         else
             display_nothing();
 
-        
+
     }
 }
 
@@ -165,7 +169,7 @@ int main(){
     GPIO_init();
     max7219_init();
     keypad_init();
-    
+
     display_nothing();
     keypad_scan();
 
