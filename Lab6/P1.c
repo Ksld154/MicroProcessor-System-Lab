@@ -2,45 +2,39 @@
 #include <stdlib.h>
 #include "stm32l476xx.h"
 
-// #define SET_REG(REG, SELECT, VAL) {((REG)=((REG)&(~(SELECT))) | (VAL));};
-
-extern void delay_1s();
 void GPIO_init();
 int  push_button();
 void SystemClock_Config(int clock_speed_type);
 void busy_waiting(int val);
 
-int already_pressed_flag = 0;
+int already_pressed_flag = 0;  // record the button is already pressed or not
+
 
 int main(){
     int clock_state = 1;
     SystemClock_Config(clock_state);
+    
     GPIO_init();
-
-    // turn off the light
-    GPIOC->BRR = 0b1;
+    GPIOC->BRR = 0b1;  // turn off the light first
     
     while (1){
-        
         
         // make LED light
         GPIOC->BSRR = 0b1;
 
+        // iterate EVERY 1/100 time unit
         for(int i = 1; i < 100; i++){
-
+            
+            // check whether the button is pressed EVERY 1/100 time unit
             int pressed = push_button();
             if(pressed && !already_pressed_flag){
                 already_pressed_flag = 1;
-                clock_state = clock_state==5 ? 1:clock_state+1;
+                clock_state = clock_state==5 ? 1:clock_state+1;  // update clock cycle
                 SystemClock_Config(clock_state);
             }
 
-
-            busy_waiting(2000);
+            busy_waiting(2000);  // wait 4/100s at 1MHz
         }
-        // busy_waiting(200000); // wait 4s at 1MHz
-        // delay_1s();
-
 
         // make LED dark
         GPIOC->BRR = 0b1;
@@ -52,19 +46,15 @@ int main(){
                 clock_state = clock_state==5 ? 1:clock_state+1;
                 SystemClock_Config(clock_state);
             }
-
             busy_waiting(2000);
         }
-        // busy_waiting(200000);
-        // delay_1s();
-    
     }
-   
+    
     return 0;
 }
 
-void SystemClock_Config(int clock_speed_type){
 
+void SystemClock_Config(int clock_speed_type){
 
     RCC->CFGR  = 0x00000000;                       // reset CFGR
     RCC->CR   &= 0xFEFFFFFF;                       // DISABLE PLL
@@ -99,11 +89,9 @@ void SystemClock_Config(int clock_speed_type){
         PLL_R = 1;
     }
 
-
     RCC->PLLCFGR |= PLL_N << 8;
     RCC->PLLCFGR |= PLL_M << 4;
     RCC->PLLCFGR |= PLL_R << 25;
-
     
     RCC->CR |= RCC_CR_PLLON;                 // ENABLE PLL as clock source
     while((RCC->CR & RCC_CR_PLLRDY) == 0);   // busy waiting until PLL is ready to be clock source(ENABLED)
@@ -112,11 +100,11 @@ void SystemClock_Config(int clock_speed_type){
     while ((RCC->CFGR & RCC_CFGR_SWS_PLL) != RCC_CFGR_SWS_PLL);     // busy waiting until PLL is ready to be System clock 
 }
 
+
 void GPIO_init(){
     
     // Enable AHB2 clock
 	RCC->AHB2ENR = 0b00000000000000000000000000000111; // A, B, C
-
 
 	// PC0  - output(LED)
 	// PC13 - input (button)
@@ -133,31 +121,36 @@ int push_button(){
 
     while(1){
     
-        // is pressed
+        // is pressed(might in bouncing stage)
+        // => do NOT RETURN
         if((GPIOC->IDR & (1<<13)) >> 13 == 0b0){
             debounce_cnt++;
         }
 
-        // press enough long (for debouncing)
+        // pressed enough long (for debouncing)
+        // => The button REALLY being PRESSED
+        // => return PRESSED
         if(debounce_cnt >= 500){
             debounce_cnt = 0;
-            is_pressed = 1;
+            is_pressed = 1;    
             break;
         }
         
-        // not pressed
+        // not pressed, or bounced back
+        // => cleanup the counter, and return NOT PRESSED
         if ((GPIOC->IDR & (1<<13)) >> 13 == 0b1){
             debounce_cnt = 0;
             is_pressed = 0;
             already_pressed_flag = 0;
             break;
         }
-
     }
     
     return is_pressed;
 }
 
+
+// wait
 void busy_waiting(int val){
 
     for(int i = val; i > 0; i--){};
