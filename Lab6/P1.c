@@ -10,32 +10,56 @@ int  push_button();
 void SystemClock_Config(int clock_speed_type);
 void busy_waiting(int val);
 
-// int is_pressed   = 0;
-// int debounce_cnt = 0;
+int already_pressed_flag = 0;
 
 int main(){
     int clock_state = 1;
     SystemClock_Config(clock_state);
     GPIO_init();
 
+    // turn off the light
     GPIOC->BRR = 0b1;
+    
     while (1){
         
-        int pressed = push_button();
-        if(pressed){
-            clock_state = clock_state==5 ? 1:clock_state+1;
-            SystemClock_Config(clock_state);
-        }
         
         // make LED light
         GPIOC->BSRR = 0b1;
-        delay_1s();
+
+        for(int i = 1; i < 100; i++){
+
+            int pressed = push_button();
+            if(pressed && !already_pressed_flag){
+                already_pressed_flag = 1;
+                clock_state = clock_state==5 ? 1:clock_state+1;
+                SystemClock_Config(clock_state);
+            }
+
+
+            busy_waiting(2000);
+        }
+        // busy_waiting(200000); // wait 4s at 1MHz
+        // delay_1s();
+
 
         // make LED dark
         GPIOC->BRR = 0b1;
-        delay_1s();
+        for(int i = 1; i < 100; i++){
+
+            int pressed = push_button();
+            if(pressed && !already_pressed_flag){
+                already_pressed_flag = 1;
+                clock_state = clock_state==5 ? 1:clock_state+1;
+                SystemClock_Config(clock_state);
+            }
+
+            busy_waiting(2000);
+        }
+        // busy_waiting(200000);
+        // delay_1s();
     
     }
+   
     return 0;
 }
 
@@ -115,7 +139,7 @@ int push_button(){
         }
 
         // press enough long (for debouncing)
-        if(debounce_cnt >= 2){
+        if(debounce_cnt >= 500){
             debounce_cnt = 0;
             is_pressed = 1;
             break;
@@ -125,6 +149,7 @@ int push_button(){
         if ((GPIOC->IDR & (1<<13)) >> 13 == 0b1){
             debounce_cnt = 0;
             is_pressed = 0;
+            already_pressed_flag = 0;
             break;
         }
 
