@@ -2,7 +2,7 @@
 #define ONE_MSECOND 200
 #define PWM1 42
 #define PWM2 35
-#define TURN_TIME 500
+#define TURN_TIME 250
 #define STOP_TIME 1000
 #define LEFT 0
 #define RIGHT 1
@@ -173,12 +173,12 @@ void turn(int left_or_right){
 		GPIOA->ODR = 0b0110 << 5;
 		busy_waiting(TURN_TIME * ONE_MSECOND);
 		GPIOA->ODR = 0b1111 << 5;
-		busy_waiting(STOP_TIME * ONE_MSECOND);
+		busy_waiting(500 * ONE_MSECOND);
 	}else if(left_or_right == RIGHT){
 		GPIOA->ODR = 0b1001 << 5;
 		busy_waiting(TURN_TIME * ONE_MSECOND);
 		GPIOA->ODR = 0b1111 << 5;
-		busy_waiting(STOP_TIME * ONE_MSECOND);
+		busy_waiting(500 * ONE_MSECOND);
 	}
 }
 
@@ -192,7 +192,7 @@ void run(){
 		object_flag = 0;
 		while(1){
 			distance = detect_distance(1);
-			if(distance <= 200 && distance > 0){
+			if(distance <= 180 && distance > 0){
 				if(object_flag == 0){
 					GPIOA->ODR = 0b1111 << 5;
 					busy_waiting(STOP_TIME * ONE_MSECOND);
@@ -233,7 +233,7 @@ void run(){
 		object_flag = 0;
 		while(1){
 			distance = detect_distance(2);
-			if(distance <= 200 && distance > 0){
+			if(distance <= 180 && distance > 0){
 				if(object_flag == 0){
 					GPIOA->ODR = 0b1111 << 5;
 					busy_waiting(STOP_TIME * ONE_MSECOND);
@@ -266,7 +266,7 @@ void run(){
 				counter++;
 				if(counter == 15 && stop == 1){
 					TIM2->CCR1 = PWM1;
-					TIM2->CCR2 = PWM2+7;
+					TIM2->CCR2 = PWM2+5;
 				}
 				break;
 			}
